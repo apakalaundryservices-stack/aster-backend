@@ -61,6 +61,15 @@ export function createApp(options = {}) {
     }
   }));
   app.use(cors({ origin: appOrigin, credentials: true }));
+  app.use((request, response, next) => {
+    if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method)) {
+      const origin = request.get("origin");
+      if (origin && origin !== appOrigin) {
+        return response.status(403).json({ error: "Request origin is not allowed." });
+      }
+    }
+    next();
+  });
   app.use(express.json({ limit: "100kb" }));
 
   app.get("/health", (request, response) => {
@@ -124,3 +133,4 @@ export function createApp(options = {}) {
 
   return app;
 }
+

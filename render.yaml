@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: aster-backend-prod
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run db:generate && npm run db:deploy
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: APP_ORIGIN
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: STAFF_EMAIL
+        sync: false
+      - key: STAFF_PASSWORD
+        sync: false
+      - key: MPESA_MODE
+        value: sandbox
