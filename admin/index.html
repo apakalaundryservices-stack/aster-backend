@@ -37,6 +37,22 @@
         <p class="admin-login-note">Secure access for authorized team members.</p>
       </div>
     </section>
+    <section class="admin-login" id="change-password-view" hidden>
+      <div class="admin-login-art">
+        <div><p class="eyebrow eyebrow-light">Secure your account</p><h1>Choose your password.</h1><p>Your first sign-in must be completed by setting a new password.</p></div>
+      </div>
+      <div class="admin-login-panel">
+        <p class="eyebrow">First sign-in</p>
+        <h2>Change your password</h2>
+        <p>Choose a unique password with at least 12 characters. You cannot open the dashboard until you change it.</p>
+        <form id="change-password-form">
+          <div class="field"><label for="new-password">New password</label><input id="new-password" name="password" type="password" autocomplete="new-password" required minlength="12" maxlength="200"></div>
+          <div class="field"><label for="confirm-password">Confirm new password</label><input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" required minlength="12" maxlength="200"></div>
+          <div class="form-actions"><button class="button" type="submit">Save new password</button></div>
+          <p class="form-message" id="change-password-message" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
     <section class="admin-app" id="dashboard-view" hidden>
       <div class="dashboard-heading">
         <div><p class="eyebrow">Staff workspace</p><h1>Aster Suites dashboard</h1><p id="user-summary"></p></div>

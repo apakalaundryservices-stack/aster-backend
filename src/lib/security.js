@@ -124,10 +124,23 @@ export function requireAuth(db, env) {
       return response.status(401).json({ error: "Session is invalid or expired." });
     }
 
-    request.auth = { userId: session.user.id, email: session.user.email, name: session.user.name, role: session.user.role };
+    request.auth = {
+      userId: session.user.id,
+      email: session.user.email,
+      name: session.user.name,
+      role: session.user.role,
+      mustChangePassword: session.user.mustChangePassword
+    };
     request.sessionId = session.id;
     return next();
   };
+}
+
+export function requirePasswordChangeComplete(request, response, next) {
+  if (request.auth?.mustChangePassword) {
+    return response.status(403).json({ error: "Change your password before using the management dashboard.", code: "PASSWORD_CHANGE_REQUIRED" });
+  }
+  return next();
 }
 
 export function requireRole(...roles) {

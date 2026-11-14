@@ -21,6 +21,9 @@ const loginSchema = z.object({
   email: z.string().trim().email().max(254),
   password: z.string().min(1).max(200)
 }).strict();
+const changePasswordSchema = z.object({
+  password: z.string().min(12).max(200)
+}).strict();
 
 export function createAuthApi(db, env = process.env) {
   const router = Router();
@@ -47,15 +50,35 @@ export function createAuthApi(db, env = process.env) {
     setSessionCookie(response, session.token, env);
     await writeAuditLog(db, { auth: { userId: user.id } }, "auth.login", "AdminUser", user.id, { role: user.role });
     response.json({
-      user: { id: user.id, email: user.email, name: user.name, role: user.role },
+      user: { id: user.id, email: user.email, name: user.name, role: user.role, mustChangePassword: user.mustChangePassword },
       expiresAt: session.expiresAt
     });
+  });
+
+  router.post("/change-password", auth, async (request, response) => {
+    const data = parseBody(changePasswordSchema, request, response);
+    if (!data) return;
+    const user = await db.adminUser.findUnique({ where: { id: request.auth.userId } });
+    if (!user?.active) throw new HttpError(401, "Authentication required.");
+    if (data.password.length < 12 || data.password.startsWith("replace-")) {
+      throw new HttpError(400, "Choose a unique password of at least 12 characters.");
+    }
+    await db.adminUser.update({
+      where: { id: user.id },
+      data: { passwordHash: await bcrypt.hash(data.password, 12), mustChangePassword: false }
+    });
+    await db.adminSession.updateMany({
+      where: { userId: user.id, id: { not: request.sessionId }, revokedAt: null },
+      data: { revokedAt: new Date() }
+    });
+    await writeAuditLog(db, request, "auth.password_changed", "AdminUser", user.id);
+    response.json({ user: { id: user.id, email: user.email, name: user.name, role: user.role, mustChangePassword: false } });
   });
 
   router.get("/me", auth, async (request, response) => {
     const user = await db.adminUser.findUnique({
       where: { id: request.auth.userId },
-      select: { id: true, email: true, name: true, role: true, active: true }
+      select: { id: true, email: true, name: true, role: true, active: true, mustChangePassword: true }
     });
     if (!user?.active) throw new HttpError(401, "Authentication required.");
     response.json({ user });

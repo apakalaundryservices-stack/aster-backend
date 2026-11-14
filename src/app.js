@@ -7,6 +7,7 @@ import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { prisma } from "./db.js";
 import { HttpError } from "./lib/errors.js";
+import { requireAuth, requirePasswordChangeComplete } from "./lib/security.js";
 import { createAdminApi } from "./routes/admin-api.js";
 import { createAuthApi } from "./routes/auth-api.js";
 import { createPaymentsApi } from "./routes/payments-api.js";
@@ -86,7 +87,7 @@ export function createApp(options = {}) {
   app.use("/api/auth/login", loginLimiter);
   app.use("/api/auth/google/start", loginLimiter);
   app.use("/api/auth", createAuthApi(db, env));
-  app.use("/api/admin", createAdminApi(db, env));
+  app.use("/api/admin", requireAuth(db, env), requirePasswordChangeComplete, createAdminApi(db, env));
   app.use("/api/payments/mpesa/stk-push", publicWriteLimiter);
   app.use("/api/payments", createPaymentsApi(db, env));
   app.use("/api/bookings", publicWriteLimiter);

@@ -2,6 +2,7 @@ const panel = document.querySelector("#admin-panel");
 const nav = document.querySelector("#admin-nav");
 const feedback = document.querySelector("#admin-feedback");
 const loginView = document.querySelector("#login-view");
+const changePasswordView = document.querySelector("#change-password-view");
 const dashboardView = document.querySelector("#dashboard-view");
 const logoutButton = document.querySelector("#logout-button");
 const dialog = document.querySelector("#admin-dialog");
@@ -65,6 +66,7 @@ async function api(url, options = {}) {
 function showLogin(message = "") {
   currentUser = null;
   loginView.hidden = false;
+  changePasswordView.hidden = true;
   dashboardView.hidden = true;
   logoutButton.hidden = true;
   if (message) {
@@ -74,9 +76,19 @@ function showLogin(message = "") {
   }
 }
 
-function showDashboard(user) {
+function showPasswordChange(user) {
   currentUser = user;
   loginView.hidden = true;
+  changePasswordView.hidden = false;
+  dashboardView.hidden = true;
+  logoutButton.hidden = false;
+}
+
+function showDashboard(user) {
+  if (user.mustChangePassword) return showPasswordChange(user);
+  currentUser = user;
+  loginView.hidden = true;
+  changePasswordView.hidden = true;
   dashboardView.hidden = false;
   logoutButton.hidden = false;
   document.querySelector("#user-summary").textContent = `${user.name} · ${user.role}`;
@@ -607,6 +619,11 @@ document.querySelector("#login-form").addEventListener("submit", async (event) =
   message.dataset.kind = "info";
   try {
     const result = await api("/api/auth/login", { method: "POST", body: JSON.stringify(data) });
+    if (result.user.mustChangePassword) {
+      form.reset();
+      showPasswordChange(result.user);
+      return;
+    }
     message.textContent = "Password accepted. Opening your dashboard…";
     message.dataset.kind = "success";
     submitButton.innerHTML = 'Opening dashboard<span class="loading-dots" aria-hidden="true"><i></i><i></i><i></i></span>';
@@ -620,6 +637,35 @@ document.querySelector("#login-form").addEventListener("submit", async (event) =
     submitButton.disabled = false;
     submitButton.removeAttribute("aria-busy");
     submitButton.textContent = "Sign in";
+  }
+});
+
+document.querySelector("#change-password-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const message = document.querySelector("#change-password-message");
+  const data = Object.fromEntries(new FormData(form).entries());
+  if (data.password !== data.confirmPassword) {
+    message.textContent = "The passwords do not match.";
+    message.dataset.kind = "error";
+    return;
+  }
+  const button = form.querySelector('button[type="submit"]');
+  button.disabled = true;
+  message.textContent = "Saving your new password…";
+  message.dataset.kind = "info";
+  try {
+    const result = await api("/api/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify({ password: data.password })
+    });
+    form.reset();
+    showDashboard(result.user);
+  } catch (error) {
+    message.textContent = error.message;
+    message.dataset.kind = "error";
+  } finally {
+    button.disabled = false;
   }
 });
 

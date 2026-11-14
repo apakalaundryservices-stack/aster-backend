@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Aster Suites staff workspace for room listings, reservations, pricing and guest care.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta property="og:type" content="website"><meta property="og:title" content="Staff dashboard | Aster Suites">
+  <meta property="og:description" content="Manage room listings, reservations, pricing and guest care.">
+  <meta name="theme-color" content="#0b1e3d">
+  <title>Staff dashboard | Aster Suites</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/admin/admin.css">
+  <script src="/admin/admin.js" defer></script>
+</head>
+<body class="admin-body">
+  <a class="skip-link" href="#admin-main">Skip to dashboard</a>
+  <header class="admin-header">
+    <a class="brand brand-admin" href="/" aria-label="Aster Suites home"><span class="brand-mark" aria-hidden="true">A</span><span>Aster Suites<small>Management</small></span></a>
+    <button class="button button-outline button-small" id="logout-button" type="button" hidden>Sign out</button>
+  </header>
+  <main class="admin-main container" id="admin-main">
+    <section class="admin-login" id="login-view">
+      <div class="admin-login-art">
+        <div><p class="eyebrow eyebrow-light">Aster Suites</p><h1>Hospitality, thoughtfully managed.</h1><p>One clear view of your rooms, reservations and guest experience.</p></div>
+      </div>
+      <div class="admin-login-panel">
+        <p class="eyebrow">Team access</p>
+        <h2>Welcome back</h2>
+        <p>Sign in to manage room listings, pricing and guest care.</p>
+        <form id="login-form">
+          <div class="field"><label for="login-email">Work email</label><input id="login-email" name="email" type="email" autocomplete="username" required maxlength="254"></div>
+          <div class="field"><label for="login-password">Password</label><div class="password-input-wrap"><input id="login-password" name="password" type="password" autocomplete="current-password" required maxlength="200"><button class="password-toggle" id="password-toggle" type="button" aria-controls="login-password" aria-pressed="false" aria-label="Show password">Show</button></div></div>
+          <div class="form-actions"><button class="button" type="submit">Sign in</button></div>
+          <p class="form-message" id="login-message" aria-live="polite"></p>
+        </form>
+        <p class="admin-login-note">Secure access for authorized team members.</p>
+      </div>
+    </section>
+    <section class="admin-login" id="change-password-view" hidden>
+      <div class="admin-login-art">
+        <div><p class="eyebrow eyebrow-light">Secure your account</p><h1>Choose your password.</h1><p>Your first sign-in must be completed by setting a new password.</p></div>
+      </div>
+      <div class="admin-login-panel">
+        <p class="eyebrow">First sign-in</p>
+        <h2>Change your password</h2>
+        <p>Choose a unique password with at least 12 characters. You cannot open the dashboard until you change it.</p>
+        <form id="change-password-form">
+          <div class="field"><label for="new-password">New password</label><input id="new-password" name="password" type="password" autocomplete="new-password" required minlength="12" maxlength="200"></div>
+          <div class="field"><label for="confirm-password">Confirm new password</label><input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" required minlength="12" maxlength="200"></div>
+          <div class="form-actions"><button class="button" type="submit">Save new password</button></div>
+          <p class="form-message" id="change-password-message" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+    <section class="admin-app" id="dashboard-view" hidden>
+      <div class="dashboard-heading">
+        <div><p class="eyebrow">Staff workspace</p><h1>Aster Suites dashboard</h1><p id="user-summary"></p></div>
+        <a class="button button-outline button-small" href="/" target="_blank" rel="noopener">View guest site</a>
+      </div>
+      <div class="admin-layout">
+        <nav class="admin-nav" id="admin-nav" aria-label="Management sections"></nav>
+        <section class="admin-content" aria-live="polite">
+          <div class="admin-feedback" id="admin-feedback" role="status"></div>
+          <div id="admin-panel"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+  <dialog class="admin-dialog" id="admin-dialog" aria-labelledby="dialog-title">
+    <form method="dialog"><button class="dialog-close" aria-label="Close dialog">×</button></form>
+    <h2 id="dialog-title">Details</h2><div id="dialog-content"></div>
+  </dialog>
+</body>
+</html>
