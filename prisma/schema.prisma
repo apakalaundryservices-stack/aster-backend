@@ -1,0 +1,323 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+}
+
+enum RoomStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CHECKED_IN
+  CHECKED_OUT
+  CANCELLED
+  REJECTED
+}
+
+enum PaymentMethod {
+  CASH
+  MPESA
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
+enum MealOrderStatus {
+  NEW
+  ACCEPTED
+  PREPARING
+  READY
+  SERVED
+  CANCELLED
+}
+
+enum RequestStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+  CANCELLED
+}
+
+model AdminUser {
+  id           String         @id @default(cuid())
+  email        String         @unique @db.VarChar(254)
+  name         String         @db.VarChar(120)
+  passwordHash String
+  role         UserRole       @default(STAFF)
+  active       Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  sessions     AdminSession[]
+  auditLogs    AuditLog[]
+}
+
+model AdminSession {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique @db.Char(64)
+  userId    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model Customer {
+  id            String            @id @default(cuid())
+  googleSubject String            @unique @db.VarChar(255)
+  email         String            @db.VarChar(254)
+  name          String            @db.VarChar(120)
+  picture       String?           @db.VarChar(1000)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  lastLoginAt   DateTime          @default(now())
+  sessions      CustomerSession[]
+  bookings      Booking[]
+}
+
+model CustomerSession {
+  id         String    @id @default(cuid())
+  tokenHash  String    @unique @db.Char(64)
+  customerId String
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId, expiresAt])
+}
+
+model Offer {
+  id              String    @id @default(cuid())
+  title           String    @db.VarChar(120)
+  description     String    @db.VarChar(500)
+  discountPercent Int
+  startDate       DateTime  @db.Date
+  endDate         DateTime  @db.Date
+  active          Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  bookings        Booking[]
+
+  @@index([active, startDate, endDate])
+}
+
+model Room {
+  id             String      @id @default(cuid())
+  slug           String      @unique @db.VarChar(100)
+  name           String      @db.VarChar(120)
+  description    String      @db.VarChar(1000)
+  roomType       String      @db.VarChar(40)
+  bedType        String      @db.VarChar(80)
+  bedCount       Int         @default(1)
+  maxGuests      Int         @default(2)
+  sizeSqm        Int?
+  inventory      Int         @default(1)
+  nightlyRate    Int
+  currency       String      @default("KES") @db.Char(3)
+  status         RoomStatus  @default(ACTIVE)
+  ownerConfirmed Boolean     @default(false)
+  notes          String?     @db.VarChar(1000)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  images         RoomImage[]
+  bookings       Booking[]
+
+  @@index([status, roomType])
+}
+
+model RoomImage {
+  id        String   @id @default(cuid())
+  roomId    String
+  url       String   @db.VarChar(500)
+  alt       String   @db.VarChar(250)
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, url])
+  @@index([roomId, position])
+}
+
+model Booking {
+  id                   String           @id @default(cuid())
+  reference            String           @unique @db.VarChar(20)
+  roomId               String
+  guestName            String           @db.VarChar(120)
+  email                String?          @db.VarChar(254)
+  phone                String           @db.VarChar(20)
+  checkIn              DateTime         @db.Date
+  checkOut             DateTime         @db.Date
+  guests               Int
+  nights               Int
+  ratePerNight         Int
+  totalAmount          Int
+  currency             String           @default("KES") @db.Char(3)
+  status               BookingStatus    @default(PENDING)
+  holdExpiresAt        DateTime?
+  guestNotes           String?          @db.VarChar(1000)
+  customerId           String?
+  offerId              String?
+  offerTitle           String?          @db.VarChar(120)
+  offerDiscountPercent Int?
+  subtotalAmount       Int              @default(0)
+  discountAmount       Int              @default(0)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  room                 Room             @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  customer             Customer?        @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  offer                Offer?           @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  payments             Payment[]
+  mealOrders           MealOrder[]
+  serviceRequests      ServiceRequest[]
+
+  @@index([roomId, checkIn, checkOut, status])
+  @@index([status, createdAt])
+  @@index([phone, reference])
+  @@index([customerId, createdAt])
+}
+
+model Meal {
+  id             String          @id @default(cuid())
+  name           String          @db.VarChar(120)
+  description    String          @db.VarChar(500)
+  price          Int
+  currency       String          @default("KES") @db.Char(3)
+  available      Boolean         @default(true)
+  ownerConfirmed Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  orderItems     MealOrderItem[]
+}
+
+model MealOrder {
+  id         String          @id @default(cuid())
+  reference  String          @unique @db.VarChar(20)
+  bookingId  String
+  guestName  String          @db.VarChar(120)
+  guestPhone String          @db.VarChar(20)
+  notes      String?         @db.VarChar(500)
+  status     MealOrderStatus @default(NEW)
+  total      Int
+  currency   String          @default("KES") @db.Char(3)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  booking    Booking         @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  items      MealOrderItem[]
+
+  @@index([status, createdAt])
+  @@index([bookingId, createdAt])
+}
+
+model MealOrderItem {
+  id        String    @id @default(cuid())
+  orderId   String
+  mealId    String
+  quantity  Int
+  unitPrice Int
+  order     MealOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  meal      Meal      @relation(fields: [mealId], references: [id], onDelete: Restrict)
+
+  @@unique([orderId, mealId])
+}
+
+model Payment {
+  id                  String        @id @default(cuid())
+  bookingId           String
+  method              PaymentMethod
+  status              PaymentStatus @default(PENDING)
+  amount              Int
+  currency            String        @default("KES") @db.Char(3)
+  phone               String?       @db.VarChar(20)
+  checkoutRequestId   String?       @unique @db.VarChar(120)
+  merchantRequestId   String?       @db.VarChar(120)
+  mpesaReceiptNumber  String?       @unique @db.VarChar(40)
+  resultCode          String?       @db.VarChar(40)
+  resultDescription   String?       @db.VarChar(500)
+  callbackFingerprint String?       @unique @db.Char(64)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  booking             Booking       @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  @@index([bookingId, status])
+  @@index([createdAt])
+}
+
+model ServiceRequest {
+  id          String        @id @default(cuid())
+  bookingId   String?
+  guestName   String        @db.VarChar(120)
+  guestPhone  String        @db.VarChar(20)
+  requestType String        @db.VarChar(60)
+  details     String        @db.VarChar(1000)
+  status      RequestStatus @default(NEW)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  booking     Booking?      @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+}
+
+model ContactMessage {
+  id        String        @id @default(cuid())
+  name      String        @db.VarChar(120)
+  email     String?       @db.VarChar(254)
+  phone     String?       @db.VarChar(20)
+  subject   String        @db.VarChar(160)
+  message   String        @db.VarChar(2000)
+  status    RequestStatus @default(NEW)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([status, createdAt])
+}
+
+model Review {
+  id         String    @id @default(cuid())
+  guestName  String    @db.VarChar(120)
+  rating     Int
+  text       String    @db.VarChar(1000)
+  source     String?   @db.VarChar(250)
+  approved   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  approvedAt DateTime?
+
+  @@index([approved, createdAt])
+}
+
+model SystemSetting {
+  key       String   @id @db.VarChar(80)
+  value     String   @db.VarChar(500)
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String     @id @default(cuid())
+  actorId   String?
+  action    String     @db.VarChar(80)
+  entity    String     @db.VarChar(80)
+  entityId  String?    @db.VarChar(120)
+  details   Json?
+  createdAt DateTime   @default(now())
+  actor     AdminUser? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([actorId, createdAt])
+}
